@@ -1,7 +1,7 @@
 '''
 dedup-links.py
 
-Short script to remove duplicates
+Short script to remove duplicates and save just the list of links
 '''
 
 import pandas as pd
