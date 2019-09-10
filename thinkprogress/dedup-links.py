@@ -16,5 +16,5 @@ print("{} total links, {} after dedup".format(len(all_links['link']),len(dedup_l
 
 print("Saving deduped list...")
 dedup_df = pd.DataFrame(dedup_links)
-dedup_df.to_csv(out_path)
+dedup_df.to_csv(out_path,header=False, index=False)
 print("Done!")
