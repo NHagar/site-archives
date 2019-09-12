@@ -9,7 +9,8 @@ import itertools
 import pandas as pd
 
 link_file = 'deduped-thinkprogress-links-only.csv'
-global_start_urls = list(pd.read_csv(link_file,header=None)[0])[100:200]
+global_start_urls = list(pd.read_csv(link_file,header=None)[0]) #[100:200] #for testing
+global_start_urls = [l for l in global_start_urls if l[:8]=='https://']
 
 
 class TPSpider(scrapy.Spider):
@@ -24,6 +25,7 @@ class TPSpider(scrapy.Spider):
     }
 
     start_urls = global_start_urls
+    allowed_domains = "thinkprogress.org"
     print("\n\nHello there! Starting with {} urls\n\n".format(len(global_start_urls)))
 
     def parse(self, response):
