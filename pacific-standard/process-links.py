@@ -1,6 +1,5 @@
 #%%
 import csv
-from time import sleep
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -17,9 +16,7 @@ links = ['https://psmag.com{}'.format(i) for i in links]
 
 #%%
 results = []
-#skips = []
 for l in tqdm(list(set(links))):
-    #try:
     soup = BeautifulSoup(requests.get(l).text, 'html.parser')
     try:
         hed = soup.find('h1').text
@@ -62,13 +59,5 @@ for l in tqdm(list(set(links))):
                     'html_body': html_body,
                     'text_body': raw_body,
                     'tags': tags})
-    #except Exception:
-    #    skips.append(l)
-    #    print(len(skips))
 
-pd.DataFrame(results).to_csv('ps-archive.csv')
-
-#%%
-testload = pd.read_csv('ps-archive.csv')
-len(testload)
-testload['pub_date'] = pd.to_datetime(testload['pub_date'])
+pd.DataFrame(results).to_csv('pacific-standard/ps-archive.csv')
