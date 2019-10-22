@@ -40,11 +40,11 @@ for l in tqdm(links):
         sections = ''
     try:
         byline = [i.text for i in soup.select('a[data-ga*=Author]') if len(i.text)>0][0]
-    except AttributeError:
+    except IndexError:
         byline = ''
     try:
         pub_date = soup.select('a[class*=time]')[0].text
-    except AttributeError:
+    except IndexError:
         pub_date = ''
     try:
         html_body = soup.find('div', {'class': 'js_post-content'}).encode_contents()
@@ -56,7 +56,7 @@ for l in tqdm(links):
         raw_body = ''
     try:
         pageviews = soup.select('div[title*=Visitors]')[0].find_all('span')[-1].text
-    except AttributeError:
+    except IndexError:
         pageviews = ''
     results.append({'link': l,
                     'hed': hed,
@@ -66,3 +66,9 @@ for l in tqdm(links):
                     'html_body': html_body,
                     'text_body': raw_body,
                     'pageviews': pageviews})
+
+#%%
+pd.DataFrame(results).to_csv('splinter/splinter-archive.csv')
+
+
+#%%
