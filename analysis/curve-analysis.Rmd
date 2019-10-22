@@ -1,0 +1,73 @@
+---
+title: "Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Test
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(zoo)
+```
+
+
+```{r}
+#Replicating charts
+df <- read_csv('../thinkprogress/full-info-thinkprogress.csv') %>% select(link, hed, subhed, sections, byline, pub_date, datetime, text_body, tags)
+
+
+##Group by month
+mo <- df %>% 
+  group_by(month = floor_date(datetime, unit = "month"))
+
+##Unique bylines per month
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  ggplot(aes(month, bylines)) + 
+  geom_line()
+
+##Stories per month
+mo %>% 
+  summarize(stories=n()) %>% 
+  ggplot(aes(month, stories)) + 
+  geom_line()
+
+##Stores per author per month
+mo %>% 
+  summarize(storiesper=n()/n_distinct(byline)) %>% 
+  ggplot(aes(month, storiesper)) + 
+  geom_line()
+
+##Tags per month
+#?
+mo %>% 
+  mutate(split_tags = split(tags, ',')) %>% 
+  select(month, split_tags)
+
+
+##Stories per tag per month
+
+```
+
+
+```{r}
+#Generating normalized curve
+##Unique bylines per month
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  ggplot(aes(month, bylines)) + 
+  geom_line()
+
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  mutate(slope = bylines-lag(bylines)) %>% 
+  mutate(smoothed=rollmean(slope, 10, na.pad=T)) %>% 
+  ggplot(aes(month, smoothed)) + 
+  geom_line()
+```
+

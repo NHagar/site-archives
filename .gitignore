@@ -3,3 +3,4 @@ __pycache__/
 .vscode/
 httpcache/
 .DS_Store
+.Rproj.user/
