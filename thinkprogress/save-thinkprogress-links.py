@@ -9,7 +9,12 @@ import itertools
 
 
 url_template = 'https://thinkprogress.org/tag/{}/page/{}/'
-tags = ['politics', 'immigration', 'world', 'health', 'climate']
+tags = ['climate', 'politics', 'immigration', 'world', 'health']
+max_pages = [1845, 3128, 242, 850, 810 ]
+
+global_start_urls = []
+for t,max_p in zip(tags,max_pages):
+    global_start_urls += [url_template.format(t,p) for p in range(1,max_p)]
 
 
 class TPSpider(scrapy.Spider):
@@ -23,10 +28,8 @@ class TPSpider(scrapy.Spider):
         # available levels: CRITICAL, ERROR, WARNING, INFO, DEBUG
     }
 
-    start_page = 1
-    max_page = 3127 # appears to be the last page of politics, which appears to be the most popular tag
-
-    start_urls = [url_template.format(tag,i) for tag,i in itertools.product(tags, range(start_page, max_page))]
+    start_urls = global_start_urls
+    print("\n\nHello there! Starting with {} urls\n\n".format(len(global_start_urls)))
 
     def parse(self, response):
 
