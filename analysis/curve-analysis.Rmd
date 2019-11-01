@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
 library(zoo)
+library(pracma)
 ```
 
 
@@ -20,6 +21,9 @@ library(zoo)
 #Replicating charts
 df <- read_csv('../thinkprogress/full-info-thinkprogress.csv') %>% select(link, hed, subhed, sections, byline, pub_date, datetime, text_body, tags)
 
+df <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
+
+df %>% write_csv('tp_recode_test.csv')
 
 ##Group by month
 mo <- df %>% 
@@ -31,13 +35,25 @@ mo %>%
   ggplot(aes(month, bylines)) + 
   geom_line()
 
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  mutate(slope = bylines-lag(bylines), stage=as_factor(ntile(month, 4))) %>% 
+  ggplot(aes(bylines, slope, color=stage)) + 
+  geom_point()
+
 ##Stories per month
 mo %>% 
   summarize(stories=n()) %>% 
   ggplot(aes(month, stories)) + 
   geom_line()
 
-##Stores per author per month
+mo %>% 
+  summarize(stories=n()) %>% 
+  mutate(slope = stories-lag(stories), stage=as_factor(ntile(month, 4))) %>% 
+  ggplot(aes(stories, slope, color=stage)) + 
+  geom_point()
+
+##Stories per author per month
 mo %>% 
   summarize(storiesper=n()/n_distinct(byline)) %>% 
   ggplot(aes(month, storiesper)) + 
@@ -48,7 +64,6 @@ mo %>%
 mo %>% 
   mutate(split_tags = split(tags, ',')) %>% 
   select(month, split_tags)
-
 
 ##Stories per tag per month
 
@@ -65,9 +80,26 @@ mo %>%
 
 mo %>% 
   summarize(bylines=n_distinct(byline)) %>% 
+  mutate(slope=bylines-lag(bylines)) %>% 
+  ggplot(aes(month,slope)) + 
+  geom_line()
+
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
   mutate(slope = bylines-lag(bylines)) %>% 
   mutate(smoothed=rollmean(slope, 10, na.pad=T)) %>% 
   ggplot(aes(month, smoothed)) + 
   geom_line()
+
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  pull(bylines) %>% 
+  approx_entropy(., edim=2, r=0.2*sd(.))
+
+mo %>% 
+  summarize(bylines=n_distinct(byline)) %>% 
+  mutate(slope = bylines-lag(bylines)) %>% 
+  ggplot(aes(bylines, slope)) + 
+  geom_point()
 ```
 

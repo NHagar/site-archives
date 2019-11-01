@@ -1,0 +1,36 @@
+---
+title: "Analysis pipeline"
+author: "Nick Hagar, Jack Bandy"
+date: "11/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Load in data
+```{r}
+
+```
+
+##Transform raw data to measures
+It would be cool to do this all in one block. Not sure if my R skills are up for that though. 
+
+Measures we decided on:
+* Story count
+* Bylines
+* Sections
+* Tags (active)
+* Stories per byline
+* Byline duration
+* Story length - classification
+* In/out link ratio
+* Image credits
+* Quotes/excerpts
+* Story rate per day
+* Clickbait in headlines
+```{r}
+
+```
+
