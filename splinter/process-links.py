@@ -15,18 +15,6 @@ with open('./splinter/links.csv', 'r', encoding='utf-8') as f:
 links = list(set([i for i in links if 'splinternews.com' in i]))
 
 #%%
-links[0]
-test = BeautifulSoup(requests.get(links[0]).text, 'html.parser')
-test.find('h1').text
-test.find('meta', {'name': 'keywords'})['content'].replace(', ', ';')
-test.find('meta', {'name': 'author'})
-[i.text for i in test.select('a[data-ga*=Author]') if len(i.text)>0][0]
-test.find_all('time')
-test.select('a[class*=time]')[0].text
-test.select('div[title*=Visitors]')[0].find_all('span')[-1].text
-test.find('div', {'class': 'js_post-content'}).text
-
-#%%
 results = []
 for l in tqdm(links):
     soup = BeautifulSoup(requests.get(l).text, 'html.parser')
@@ -68,7 +56,6 @@ for l in tqdm(links):
                     'pageviews': pageviews})
 
 #%%
-pd.DataFrame(results).to_csv('splinter/splinter-archive.csv')
+pd.DataFrame(results).to_csv('splinter/splinter-archive-patched.csv')
 
-
-#%%
+# %%
