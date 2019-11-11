@@ -4,3 +4,4 @@ __pycache__/
 httpcache/
 .DS_Store
 .Rproj.user/
+*.json

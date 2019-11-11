@@ -7,13 +7,20 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+library(zoo)
 ```
 
 ##Load in data
 ```{r}
-
+df <- read_csv('../pacific-standard/ps-archive-patched.csv')
 ```
 
+```{r}
+df <- df %>% 
+  mutate(monthyear=as.yearmon(pub_date), weekyear=paste(week(pub_date), year(pub_date), sep=' '))
+```
 ##Transform raw data to measures
 It would be cool to do this all in one block. Not sure if my R skills are up for that though. 
 
@@ -31,6 +38,48 @@ Measures we decided on:
 * Story rate per day
 * Clickbait in headlines
 ```{r}
+ldf <- df %>% 
+  select(-html_body) %>%
+  mutate(words=log(str_count(text_body, ' ')), words_classification=ntile(words, 3)) %>% 
+  select(-text_body) %>% 
+  spread(key=words_classification, value=words_classification, fill=0) %>% 
+  group_by(monthyear) %>% 
+  summarize(count_short=sum(ifelse(`1`>0,1,0)),
+            count_med=sum(ifelse(`2`>0,1,0)),
+            count_long=sum(ifelse(`3`>0,1,0)))
+
+
+tdf <- df %>% 
+  separate(sections, into=c('s1','s2','s3', 's4'), sep=';') %>% 
+  gather(`s1`:`s4`, key='hierarchy', value='section') %>% 
+  separate(tags, into=c('t1','t2','t3', 't4', 't5', 't6', 't7', 't8', 't9', 't10', 't11', 't12', 't13', 't14', 't15', 't16', 't17', 't18', 't19', 't20', 't21', 't22', 't23', 't24', 't25'), sep=';') %>% 
+  gather(`t1`:`t25`, key='thierarchy', value='tag') %>% 
+  group_by(monthyear) %>% 
+  summarize(sections=n_distinct(section),
+            tags=n_distinct(tag))
+
+
+adf <- df %>% 
+  group_by(monthyear) %>% 
+  summarize(story_count=n(),
+            byline=n_distinct(byline_updated),
+            storiesper=story_count/byline)
+
+agg_stats <- left_join(left_join(adf, ldf), tdf)
 
 ```
 
+Figure town
+``` {r}
+agg_stats %>% 
+  ggplot(aes(monthyear, story_count)) + 
+  geom_smooth(method='auto') + 
+  geom_line()
+
+agg_stats %>% 
+  mutate(count_short=count_short/story_count, count_med=count_med/story_count, count_long=count_long/story_count) %>% 
+  gather(count_short:count_long, key='length', value='stories') %>% 
+  ggplot(aes(monthyear, stories, color=length)) + 
+  geom_smooth() +
+  geom_line()
+```

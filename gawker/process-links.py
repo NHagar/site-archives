@@ -1,74 +1,65 @@
 #%%
 import csv
-import requests
+import scrapy
+import itertools
 import pandas as pd
-from bs4 import BeautifulSoup
-from tqdm import tqdm
+import json
 
 #%%
-with open('./gawker/links.csv', 'r', encoding='utf-8') as f:
+with open('links.csv', 'r', encoding='utf-8') as f:
     reader = csv.reader(f)
     for row in reader:
         links = row
 
-#%%
 links = ['https://gawker.com{}'.format(i) for i in links]
 
-#%%
-test = requests.get('https://gawker.com/heroic-uhhh-pharmaceutical-company-savagely-undercu-1738185665')
-soup = BeautifulSoup(test.text, 'html.parser')
-soup.find('h1').text
-soup.find("div", {"class": "meta__views"}).text
-';'.join([i.text for i in soup.find('div', {'class': 'taglist'}).find_all('li')])
-soup.find('div', {'class': 'meta__byline'}).text
-soup.find('time')['datetime']
-soup.find('article').get_text()
-soup.find('div', {'class': 'post-content'}).get_text()
-soup
-#%%
-results = []
-for l in tqdm(list(set(links))):
-    soup = BeautifulSoup(requests.get(l).text, 'html.parser')
-    try:
-        hed = soup.find('h1').text
-    except AttributeError:
-        hed = ''
-    try:
-        pageviews = soup.find("div", {"class": "meta__views"}).text
-    except AttributeError:
-        pageviews = ''
-    try:
-        sections = ';'.join([i.text for i in soup.find('div', {'class': 'taglist'}).find_all('li')])
-    except AttributeError:
-        sections = ''
-    try:
-        byline = soup.find('div', {'class': 'meta__byline'}).text
-    except AttributeError:
-        byline = ''
-    try:
-        pub_date = soup.find('time')['datetime']
-    except AttributeError:
-        pub_date = ''
-    try:
-        html_body = soup.find('div', {'class': 'post-content'}).encode_contents()
-    except AttributeError:
-        html_body = ''
-    try:
-        raw_body = soup.find('div', 'm-detail--body').get_text()
-    except AttributeError:
-        raw_body = ''
-    try:
-        tags = ';'.join([i.text for i in soup.find('dd', 'm-detail--keywords').children])
-    except AttributeError:
-        tags = ''
-    results.append({'link': l,
-                    'hed': hed,
-                    'subhed': subhed,
-                    'sections': sections,
-                    'byline': byline,
-                    'pub_date': pub_date,
-                    'html_body': html_body,
-                    'text_body': raw_body,
-                    'tags': tags})
+with open('gawker-archive.json', 'r') as myfile:
+    data=myfile.read()
 
-pd.DataFrame(results).to_csv('pacific-standard/ps-archive.csv')
+# parse file
+obj = json.loads(data)
+
+#%%
+parsed_links = [i['link'] for i in obj]
+
+#%%
+remaining = list(set(links)-set(parsed_links))
+remaining = [i.split('%')[0] for i in remaining]
+#%%
+class GSpider(scrapy.Spider):
+    name = 'gawker'
+
+    custom_settings = {
+        'AUTOTHROTTLE_ENABLED' : True, #make sure set to True for big crawls
+        'HTTPCACHE_ENABLED' : True,
+        'ROBOTSTXT_OBEY' : True,
+        'LOG_LEVEL' : 'INFO'
+        # available levels: CRITICAL, ERROR, WARNING, INFO, DEBUG
+    }
+
+    start_urls = remaining
+    allowed_domains = "gawker.com"
+    print("\n\nHello there! Starting with {} urls\n\n".format(len(links)))
+
+    def parse(self, response):
+        #link,hed,subhed,sections,byline,pub_date,html_body,text_body,tags
+
+        link = response.request.url
+        hed = response.css('h1::text').get()
+        sections = ';'.join(response.css('div.taglist > ul > li > a::text').getall())
+        byline = response.css('div.meta__byline::text').get()
+        pub_date = response.css('div.meta__text > time::text').get()
+        html_body = response.css('div.post-content').get()
+        text_body = response.css('div.post-content::text').get()
+        pageviews = response.css('div.meta__pageviews::text').get()
+
+        yield {
+            'link': link,
+            'hed': hed,
+            'sections':sections,
+            'byline':byline,
+            'pub_date':pub_date,
+            'html_body':html_body,
+            'text_body':text_body,
+            'pageviews':pageviews
+        }
