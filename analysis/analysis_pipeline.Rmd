@@ -16,12 +16,13 @@ library(zoo)
 ```{r}
 df <- read_csv('../pacific-standard/ps-archive-patched.csv')
 df2 <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
+
 ```
 ##Combine data - bind rows
 ``` {r}
 #Iron out dataframe specifics
 df <- df %>% select(-X1, -`Unnamed: 0`) %>% mutate(pub='Pacific Standard')
-df2 <- df2 %>% select(-pub_date) %>% rename("pub_date"=datetime) %>% mutate(pub='Think Progress')
+df2 <- df2 %>% select(-pub_date) %>% rename("pub_date"=datetime, "byline_updated"=byline) %>% mutate(pub='Think Progress')
 
 d <- bind_rows(df, df2)
 ```
@@ -89,6 +90,11 @@ agg_stats %>%
   geom_line()
 
 agg_stats %>% 
+  ggplot(aes(monthyear, byline, color=pub)) + 
+  geom_smooth(method='auto') + 
+  geom_line()
+
+agg_stats %>% 
   ggplot(aes(monthyear, tags, color=pub)) + 
   geom_smooth(method='auto') + 
   geom_line()
@@ -103,5 +109,4 @@ agg_stats %>%
 
 ##NOTES
 * Normalization - zero out start points, normalize y-axis to max?
-* TP byline - only shows one
 * Disambiguate sections and tags across publications
