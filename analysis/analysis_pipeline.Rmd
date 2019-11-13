@@ -15,10 +15,20 @@ library(zoo)
 ##Load in data
 ```{r}
 df <- read_csv('../pacific-standard/ps-archive-patched.csv')
+df2 <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
+```
+##Combine data - bind rows
+``` {r}
+#Iron out dataframe specifics
+df <- df %>% select(-X1, -`Unnamed: 0`) %>% mutate(pub='Pacific Standard')
+df2 <- df2 %>% select(-pub_date) %>% rename("pub_date"=datetime) %>% mutate(pub='Think Progress')
+
+d <- bind_rows(df, df2)
 ```
 
+##Set up time aggregation columns
 ```{r}
-df <- df %>% 
+d <- d %>% 
   mutate(monthyear=as.yearmon(pub_date), weekyear=paste(week(pub_date), year(pub_date), sep=' '))
 ```
 ##Transform raw data to measures
@@ -38,41 +48,48 @@ Measures we decided on:
 * Story rate per day
 * Clickbait in headlines
 ```{r}
-ldf <- df %>% 
+ldf <- d %>% 
   select(-html_body) %>%
   mutate(words=log(str_count(text_body, ' ')), words_classification=ntile(words, 3)) %>% 
   select(-text_body) %>% 
   spread(key=words_classification, value=words_classification, fill=0) %>% 
-  group_by(monthyear) %>% 
+  group_by(pub, monthyear) %>% 
   summarize(count_short=sum(ifelse(`1`>0,1,0)),
             count_med=sum(ifelse(`2`>0,1,0)),
             count_long=sum(ifelse(`3`>0,1,0)))
 
 
-tdf <- df %>% 
+tdf <- d %>% 
   separate(sections, into=c('s1','s2','s3', 's4'), sep=';') %>% 
   gather(`s1`:`s4`, key='hierarchy', value='section') %>% 
   separate(tags, into=c('t1','t2','t3', 't4', 't5', 't6', 't7', 't8', 't9', 't10', 't11', 't12', 't13', 't14', 't15', 't16', 't17', 't18', 't19', 't20', 't21', 't22', 't23', 't24', 't25'), sep=';') %>% 
   gather(`t1`:`t25`, key='thierarchy', value='tag') %>% 
-  group_by(monthyear) %>% 
+  group_by(pub, monthyear) %>% 
   summarize(sections=n_distinct(section),
             tags=n_distinct(tag))
 
 
-adf <- df %>% 
-  group_by(monthyear) %>% 
+adf <- d %>% 
+  group_by(pub, monthyear) %>% 
   summarize(story_count=n(),
             byline=n_distinct(byline_updated),
             storiesper=story_count/byline)
 
 agg_stats <- left_join(left_join(adf, ldf), tdf)
 
+
+agg_stats
 ```
 
-Figure town
+##Figure town
 ``` {r}
 agg_stats %>% 
-  ggplot(aes(monthyear, story_count)) + 
+  ggplot(aes(monthyear, story_count, color=pub)) + 
+  geom_smooth(method='auto') + 
+  geom_line()
+
+agg_stats %>% 
+  ggplot(aes(monthyear, tags, color=pub)) + 
   geom_smooth(method='auto') + 
   geom_line()
 
@@ -83,3 +100,8 @@ agg_stats %>%
   geom_smooth() +
   geom_line()
 ```
+
+##NOTES
+* Normalization - zero out start points, normalize y-axis to max?
+* TP byline - only shows one
+* Disambiguate sections and tags across publications
