@@ -16,15 +16,18 @@ library(zoo)
 ```{r}
 df <- read_csv('../pacific-standard/ps-archive-patched.csv')
 df2 <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
-
+df3 <- read_csv('../splinter/splinter-archive-patched.csv')
 ```
 ##Combine data - bind rows
 ``` {r}
 #Iron out dataframe specifics
 df <- df %>% select(-X1, -`Unnamed: 0`) %>% mutate(pub='Pacific Standard')
 df2 <- df2 %>% select(-pub_date) %>% rename("pub_date"=datetime, "byline_updated"=byline) %>% mutate(pub='Think Progress')
+df3 <- df3 %>% select(-X1, -pageviews) %>% 
+  mutate(pub='Splinter', pub_date=as.POSIXct(pub_date, format = "%m/%d/%y %I:%M %p")) %>% 
+  rename("byline_updated"=byline)
 
-d <- bind_rows(df, df2)
+d <- bind_rows(df, df2, df3)
 ```
 
 ##Set up time aggregation columns
@@ -85,14 +88,23 @@ agg_stats
 ##Figure town
 ``` {r}
 agg_stats %>% 
-  ggplot(aes(monthyear, story_count, color=pub)) + 
+  group_by(pub) %>% 
+  mutate(norm_count=story_count/max(story_count), norm_days=monthyear-min(monthyear)) %>% 
+  ggplot(aes(norm_days, norm_count, color=pub)) + 
+  geom_smooth(method='auto')
+
+agg_stats %>% 
+  group_by(pub) %>% 
+  mutate(norm_byline=byline/max(byline), norm_days=monthyear-min(monthyear)) %>% 
+  ggplot(aes(norm_days, norm_byline, color=pub)) + 
   geom_smooth(method='auto') + 
   geom_line()
 
 agg_stats %>% 
-  ggplot(aes(monthyear, byline, color=pub)) + 
-  geom_smooth(method='auto') + 
-  geom_line()
+  group_by(pub) %>% 
+  mutate(norm_byline=byline/max(byline), norm_days=monthyear-min(monthyear), norm_diff=norm_days/max(norm_days)) %>% 
+  ggplot(aes(norm_diff, norm_byline, color=pub)) + 
+  geom_smooth(method='auto')
 
 agg_stats %>% 
   ggplot(aes(monthyear, tags, color=pub)) + 
