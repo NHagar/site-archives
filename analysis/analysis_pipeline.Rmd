@@ -17,6 +17,8 @@ library(zoo)
 df <- read_csv('../pacific-standard/ps-archive-patched.csv')
 df2 <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
 df3 <- read_csv('../splinter/splinter-archive-patched.csv')
+df4 <- read_csv('../DNAinfo/DNA-info-chicago-info.csv')
+df5 <- read_csv('../DNAinfo/DNA-info-new-york-info.csv')
 ```
 ##Combine data - bind rows
 ``` {r}
@@ -26,14 +28,18 @@ df2 <- df2 %>% select(-pub_date) %>% rename("pub_date"=datetime, "byline_updated
 df3 <- df3 %>% select(-X1, -pageviews) %>% 
   mutate(pub='Splinter', pub_date=as.POSIXct(pub_date, format = "%m/%d/%y %I:%M %p")) %>% 
   rename("byline_updated"=byline)
+df4 <- df4 %>% mutate(pub='DNAinfo-Chicago', pub_date=as.POSIXct(pub_date, format="%B %d, %Y %I:%M%p")) %>% rename('byline_updated'=byline)
+df5 <- df5 %>% mutate(pub='DNAinfo-NY', pub_date=as.POSIXct(pub_date, format="%B %d, %Y %I:%M%p")) %>% rename('byline_updated'=byline)
 
-d <- bind_rows(df, df2, df3)
+d <- bind_rows(df, df2, df3, df4, df5)
 ```
 
-##Set up time aggregation columns
+##Set up time aggregation columns, remove duplicates
 ```{r}
 d <- d %>% 
   mutate(monthyear=as.yearmon(pub_date), weekyear=paste(week(pub_date), year(pub_date), sep=' '))
+
+d <- d %>% unique()
 ```
 ##Transform raw data to measures
 It would be cool to do this all in one block. Not sure if my R skills are up for that though. 
@@ -54,7 +60,9 @@ Measures we decided on:
 ```{r}
 ldf <- d %>% 
   select(-html_body) %>%
+  group_by(pub) %>% 
   mutate(words=log(str_count(text_body, ' ')), words_classification=ntile(words, 3)) %>% 
+  filter(!is.na(words_classification)) %>% 
   select(-text_body) %>% 
   spread(key=words_classification, value=words_classification, fill=0) %>% 
   group_by(pub, monthyear) %>% 
@@ -79,7 +87,7 @@ adf <- d %>%
             byline=n_distinct(byline_updated),
             storiesper=story_count/byline)
 
-agg_stats <- left_join(left_join(adf, ldf), tdf)
+agg_stats <- left_join(left_join(adf, ldf), tdf) %>% filter(!is.na(monthyear) & monthyear>1980)
 
 
 agg_stats
@@ -87,36 +95,17 @@ agg_stats
 
 ##Figure town
 ``` {r}
-agg_stats %>% 
-  group_by(pub) %>% 
-  mutate(norm_count=story_count/max(story_count), norm_days=monthyear-min(monthyear)) %>% 
+agg_stats %>%
+  arrange(monthyear) %>% 
+  mutate(norm_count=story_count/max(story_count), norm_days=row_number()/max(row_number())) %>% 
   ggplot(aes(norm_days, norm_count, color=pub)) + 
   geom_smooth(method='auto')
 
-agg_stats %>% 
-  group_by(pub) %>% 
-  mutate(norm_byline=byline/max(byline), norm_days=monthyear-min(monthyear)) %>% 
+agg_stats %>%
+  arrange(monthyear) %>% 
+  mutate(norm_byline=byline/max(byline), norm_days=row_number()/max(row_number())) %>% 
   ggplot(aes(norm_days, norm_byline, color=pub)) + 
-  geom_smooth(method='auto') + 
-  geom_line()
-
-agg_stats %>% 
-  group_by(pub) %>% 
-  mutate(norm_byline=byline/max(byline), norm_days=monthyear-min(monthyear), norm_diff=norm_days/max(norm_days)) %>% 
-  ggplot(aes(norm_diff, norm_byline, color=pub)) + 
   geom_smooth(method='auto')
-
-agg_stats %>% 
-  ggplot(aes(monthyear, tags, color=pub)) + 
-  geom_smooth(method='auto') + 
-  geom_line()
-
-agg_stats %>% 
-  mutate(count_short=count_short/story_count, count_med=count_med/story_count, count_long=count_long/story_count) %>% 
-  gather(count_short:count_long, key='length', value='stories') %>% 
-  ggplot(aes(monthyear, stories, color=length)) + 
-  geom_smooth() +
-  geom_line()
 ```
 
 ##NOTES
