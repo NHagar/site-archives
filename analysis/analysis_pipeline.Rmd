@@ -20,6 +20,10 @@ df2 <- read_csv('../thinkprogress/full-info-thinkprogress.csv')
 df3 <- read_csv('../splinter/splinter-archive-patched.csv')
 df4 <- read_csv('../DNAinfo/DNA-info-chicago-info.csv')
 df5 <- read_csv('../DNAinfo/DNA-info-new-york-info.csv')
+
+g_one <- fromJSON("../gawker/gawker-archive.json")
+g_two <- fromJSON("../gawker/gawker-archive_pickups.json")
+df6 <- rbind(g_one, g_two)
 ```
 ##Combine data - bind rows
 ``` {r}
@@ -31,8 +35,10 @@ df3 <- df3 %>% select(-X1, -pageviews) %>%
   rename("byline_updated"=byline)
 df4 <- df4 %>% mutate(pub='DNAinfo-Chicago', pub_date=as.POSIXct(pub_date, format="%B %d, %Y %I:%M%p")) %>% rename('byline_updated'=byline)
 df5 <- df5 %>% mutate(pub='DNAinfo-NY', pub_date=as.POSIXct(pub_date, format="%B %d, %Y %I:%M%p")) %>% rename('byline_updated'=byline)
+df6 <- df6 %>% mutate(pub='Gawker', pub_date=as.POSIXct(pub_date, format="%m/%d/%y %I:%M %p")) %>% rename('byline_updated'=byline)
 
-d <- bind_rows(df, df2, df3, df4, df5)
+
+d <- bind_rows(df, df2, df3, df4, df5, df6)
 ```
 
 ##Set up time aggregation columns, remove duplicates
@@ -110,5 +116,4 @@ agg_stats %>%
 ```
 
 ##NOTES
-* Normalization - zero out start points, normalize y-axis to max?
 * Disambiguate sections and tags across publications
