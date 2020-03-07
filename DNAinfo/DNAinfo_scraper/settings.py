@@ -21,7 +21,7 @@ LOG_LEVEL = 'INFO'
 ROBOTSTXT_OBEY = True
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'news-archiver'
-DOWNLOAD_DELAY = 1
+#DOWNLOAD_DELAY = 0.5
 
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
@@ -32,7 +32,7 @@ DOWNLOAD_DELAY = 1
 # See also autothrottle settings and docs
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
-CONCURRENT_REQUESTS_PER_IP = 4
+CONCURRENT_REQUESTS_PER_IP = 8
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -74,7 +74,8 @@ ITEM_PIPELINES = {
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
 # The initial download delay
-AUTOTHROTTLE_START_DELAY = 5
+AUTOTHROTTLE_START_DELAY = 0.3
+AUTOTHROTTLE_MAX_DELAY = 5
 # The maximum download delay to be set in case of high latencies
 #AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
